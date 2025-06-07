@@ -1,0 +1,118 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Users can read/write their own user document and create new ones
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Allow reading other users for system operations
+      allow read: if request.auth != null;
+      // Allow creation of new user documents
+      allow create: if request.auth != null;
+    }
+    
+    // Vehicle drivers can read/write their own data and register
+    match /vehicle_drivers/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Allow reading for system operations
+      allow read: if request.auth != null;
+      // Allow creation for registration
+      allow create: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Ambulance drivers can read/write their own data and register
+    match /ambulance_drivers/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Allow reading for system operations
+      allow read: if request.auth != null;
+      // Allow creation for registration
+      allow create: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Hospital admins can read/write their own data and register
+    match /hospital_admins/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Allow reading for system operations (to check if user is hospital admin)
+      allow read: if request.auth != null;
+      // Allow creation for registration
+      allow create: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Accidents - enhanced rules for CRUD operations
+    match /accidents/{accidentId} {
+      allow create: if request.auth != null;
+      // Allow all authenticated users to read accidents (needed for hospital dashboard)
+      allow read: if request.auth != null;
+      allow update: if request.auth != null &&
+        (
+          request.auth.uid == resource.data.reporterId ||
+          exists(/databases/$(database)/documents/hospital_admins/$(request.auth.uid)) ||
+          exists(/databases/$(database)/documents/ambulance_drivers/$(request.auth.uid))
+        );
+      // Allow delete only for the reporter and only if status is 'pending' or 'hospital_notified'
+      allow delete: if request.auth != null && 
+        request.auth.uid == resource.data.reporterId &&
+        (resource.data.status == 'pending' || resource.data.status == 'hospital_notified');
+    }
+    
+    // Hospital responses - only hospital admins can create/update
+    match /hospital_responses/{responseId} {
+      allow create, update: if request.auth != null &&
+        exists(/databases/$(database)/documents/hospital_admins/$(request.auth.uid));
+      allow read: if request.auth != null;
+      // Allow hospital admins to delete their own responses
+      allow delete: if request.auth != null &&
+        exists(/databases/$(database)/documents/hospital_admins/$(request.auth.uid));
+    }
+    
+    // Assignments - ambulance drivers and hospital admins can create/update
+    match /assignments/{assignmentId} {
+      allow create, update: if request.auth != null &&
+        (
+          exists(/databases/$(database)/documents/ambulance_drivers/$(request.auth.uid)) ||
+          exists(/databases/$(database)/documents/hospital_admins/$(request.auth.uid))
+        );
+      allow read: if request.auth != null;
+      // Allow deletion by ambulance drivers and hospital admins
+      allow delete: if request.auth != null &&
+        (
+          exists(/databases/$(database)/documents/ambulance_drivers/$(request.auth.uid)) ||
+          exists(/databases/$(database)/documents/hospital_admins/$(request.auth.uid))
+        );
+    }
+    
+    // Hospital notifications - enhanced permissions
+    match /hospital_notifications/{notificationId} {
+      allow read, create, update, delete: if request.auth != null;
+    }
+    
+    // Ambulance notifications - enhanced permissions  
+    match /ambulance_notifications/{notificationId} {
+      allow read, create, update, delete: if request.auth != null;
+    }
+    
+    // General notifications
+    match /notifications/{notificationId} {
+      allow read, create, update, delete: if request.auth != null;
+    }
+    
+    // Hospitals - all authenticated users can read, only admins can write
+    match /hospitals/{hospitalId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null &&
+        exists(/databases/$(database)/documents/hospital_admins/$(request.auth.uid));
+      // Allow creation of new hospitals during registration
+      allow create: if request.auth != null;
+    }
+    
+    // Ambulance rejections - ambulance drivers can create, everyone authenticated can read
+    match /ambulance_rejections/{rejectionId} {
+      allow create: if request.auth != null &&
+        exists(/databases/$(database)/documents/ambulance_drivers/$(request.auth.uid));
+      allow read: if request.auth != null;
+      // Allow deletion by ambulance drivers
+      allow delete: if request.auth != null &&
+        exists(/databases/$(database)/documents/ambulance_drivers/$(request.auth.uid));
+    }
+  }
+}
