@@ -472,8 +472,30 @@ export default function MapLocationPicker({
   };
 
   const handleManualSearch = () => {
-    setError(null);
-    performTextSearch(searchQuery);
+    let query = searchQuery;
+
+    // Try to get the visible value from the autocomplete element (for <gmp-place-autocomplete>)
+    let elementValue = '';
+
+    // Try to find any input inside the autocompleteRef (deep search)
+    if (autocompleteRef.current) {
+      const deepInput = autocompleteRef.current.querySelector('input');
+      if (deepInput && deepInput.value) {
+        elementValue = deepInput.value;
+      }
+    }
+
+    if (elementValue && elementValue.trim()) {
+      query = elementValue.trim();
+      setSearchQuery(query);
+    }
+
+    if (!query || !query.trim()) {
+      setError('Please enter a location to search for');
+      return;
+    }
+
+    performTextSearch(query);
   };
 
   const getCurrentLocation = async () => {
