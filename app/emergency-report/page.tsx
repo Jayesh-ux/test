@@ -225,14 +225,19 @@ export default function EmergencyReportPage() {
               <div className="bg-red-50 p-4 rounded-lg">
                 <div className="flex items-center mb-2">
                   <Phone className="h-5 w-5 text-red-600 mr-2" />
-                  <h3 className="font-medium text-red-900">Emergency Contacts</h3>
+                  <h3 className="font-medium text-red-900">Emergency Contacts (India)</h3>
                 </div>
                 <div className="text-sm text-red-700 space-y-1">
-                  <p>• Police: 911</p>
-                  <p>• Fire Department: 911</p>
-                  <p>• Medical Emergency: 911</p>
-                  <p className="text-xs text-red-600 mt-2">
-                    If this is a life-threatening emergency, call 911 immediately
+                  <p>• <strong>Police:</strong> 100</p>
+                  <p>• <strong>Fire Brigade:</strong> 101</p>
+                  <p>• <strong>Ambulance/Medical Emergency:</strong> 108</p>
+                  <p>• <strong>Disaster Management:</strong> 108</p>
+                  <p>• <strong>Women Helpline:</strong> 1091</p>
+                  <p>• <strong>Child Helpline:</strong> 1098</p>
+                  <p>• <strong>Tourist Helpline:</strong> 1363</p>
+                  <p>• <strong>National Emergency Number:</strong> 112</p>
+                  <p className="text-xs text-red-600 mt-2 font-medium">
+                    For immediate life-threatening emergencies, call 108 (Ambulance) or 112 (National Emergency)
                   </p>
                 </div>
               </div>

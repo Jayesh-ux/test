@@ -472,30 +472,28 @@ export default function MapLocationPicker({
   };
 
   const handleManualSearch = () => {
-    let query = searchQuery;
-
-    // Try to get the visible value from the autocomplete element (for <gmp-place-autocomplete>)
-    let elementValue = '';
-
-    // Try to find any input inside the autocompleteRef (deep search)
-    if (autocompleteRef.current) {
-      const deepInput = autocompleteRef.current.querySelector('input');
-      if (deepInput && deepInput.value) {
-        elementValue = deepInput.value;
+    setError(null);
+    
+    // If we have an autocomplete element and it's the legacy type (not an HTMLElement)
+    if (autocompleteElement && !(autocompleteElement instanceof HTMLElement)) {
+      // For legacy autocomplete, we need to trigger the place_changed event
+      // by getting the place directly if available
+      try {
+        const autocomplete = autocompleteElement as google.maps.places.Autocomplete;
+        const place = autocomplete.getPlace();
+        
+        // If we have a valid place with geometry, use it
+        if (place && place.geometry && place.geometry.location) {
+          handleLegacyPlaceSelect(place);
+          return;
+        }
+      } catch (error) {
+        console.error('Error getting place from autocomplete:', error);
       }
     }
-
-    if (elementValue && elementValue.trim()) {
-      query = elementValue.trim();
-      setSearchQuery(query);
-    }
-
-    if (!query || !query.trim()) {
-      setError('Please enter a location to search for');
-      return;
-    }
-
-    performTextSearch(query);
+    
+    // Fall back to text search if autocomplete selection isn't available
+    performTextSearch(searchQuery);
   };
 
   const getCurrentLocation = async () => {

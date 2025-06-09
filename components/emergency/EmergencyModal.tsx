@@ -176,8 +176,23 @@ export function EmergencyModal({ isOpen, onClose, onSubmit }: EmergencyModalProp
   }, [isOpen]);
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+    <Dialog
+      open={isOpen}
+      onOpenChange={onClose}
+    >
+      <DialogContent
+        className="max-w-4xl max-h-[90vh] overflow-y-auto"
+        // Prevent closing when interacting with the autocomplete dropdown
+        onInteractOutside={event => {
+          // If the click is inside a .pac-container, prevent dialog close
+          if (
+            event.target instanceof HTMLElement &&
+            event.target.closest('.pac-container')
+          ) {
+            event.preventDefault();
+          }
+        }}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center text-red-600">
             <AlertCircle className="w-5 h-5 mr-2" />

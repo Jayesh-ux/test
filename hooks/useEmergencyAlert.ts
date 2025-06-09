@@ -67,7 +67,7 @@ export function useEmergencyAlert() {
 
       toast({
         title: "Emergency Reported Successfully! 🚨",
-        description: "Your emergency has been reported and nearby hospitals have been notified. Help is on the way!",
+        description: "Your emergency has been reported and nearby hospitals have been notified. For immediate help, call 108 (Ambulance) or 112 (National Emergency).",
       });
 
       return accidentId;
@@ -77,7 +77,7 @@ export function useEmergencyAlert() {
       
       toast({
         title: "Error Reporting Emergency",
-        description: "Failed to report emergency. Please try again or call 911 directly.",
+        description: "Failed to report emergency. Please try again or call 108 (Ambulance) or 112 (National Emergency) directly.",
         variant: "destructive",
       });
       
@@ -138,9 +138,34 @@ export function useEmergencyAlert() {
     });
   }, []);
 
+  const showEmergencyContacts = useCallback(() => {
+    toast({
+      title: "🚨 Emergency Contacts (India)",
+      description: "Police: 100 | Fire: 101 | Ambulance: 108 | National Emergency: 112",
+      duration: 10000,
+    });
+  }, [toast]);
+
+  const callEmergencyNumber = useCallback((number: string) => {
+    if (typeof window !== 'undefined') {
+      window.location.href = `tel:${number}`;
+    }
+  }, []);
+
   return {
     state,
     reportEmergency,
     clearEmergencyState,
+    showEmergencyContacts,
+    callEmergencyNumber,
+    emergencyNumbers: {
+      police: '100',
+      fire: '101',
+      ambulance: '108',
+      nationalEmergency: '112',
+      womenHelpline: '1091',
+      childHelpline: '1098',
+      touristHelpline: '1363',
+    },
   };
 }

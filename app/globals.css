@@ -2,6 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
+
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -56,4 +57,281 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Google Places Autocomplete Container */
+.pac-container {
+  /* Base Styles */
+  background: white !important;
+  position: absolute !important; /* Changed from fixed to absolute */
+  z-index: 99999 !important;
+  margin-top: 8px !important;
+  padding: 0.5rem 0 !important;
+  
+  /* Border and Shadow */
+  border: 1px solid #e5e7eb !important;
+  border-radius: 0.5rem !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 
+              0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+  
+  /* Width Control */
+  width: var(--pac-container-width, 100%) !important;
+  min-width: 250px !important;
+  max-width: calc(100vw - 2rem) !important;
+  
+  /* Scrolling */
+  max-height: 240px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+
+  /* Critical Fixes */
+  transform: none !important;
+  font-family: inherit !important;
+  pointer-events: auto !important;
+}
+
+/* Hide Google's Default Elements */
+.pac-container:after {
+  display: none !important;
+}
+
+/* Prevent Multiple Containers */
+.pac-container + .pac-container {
+  display: none !important;
+}
+
+/* Suggestion Items */
+.pac-item {
+  padding: 0.75rem 1rem !important;
+  cursor: pointer !important;
+  border: none !important;
+  border-bottom: 1px solid #f3f4f6 !important;
+  margin: 0 !important;
+  font-size: 0.875rem !important;
+  line-height: 1.25rem !important;
+  color: #374151 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+}
+
+.pac-item:last-child {
+  border-bottom: none !important;
+}
+
+.pac-item:hover {
+  background-color: #f3f4f6 !important;
+}
+
+/* FIXED: Enhanced Google Places Autocomplete styles with proper positioning */
+.pac-container {
+  /* Critical positioning fixes */
+  position: fixed !important;
+  z-index: 99999 !important;
+  pointer-events: auto !important;
+  
+  /* Size and Position Variables */
+  width: var(--pac-container-width, auto) !important;
+  left: var(--pac-container-left, 0) !important;
+  top: var(--pac-container-top, 0) !important;
+  
+  /* Appearance */
+  background: white !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 0.5rem !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 
+              0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+  
+  /* Layout */
+  margin-top: 4px !important;
+  padding: 0.5rem 0 !important;
+  font-family: inherit !important;
+  
+  /* Scrolling */
+  max-height: 240px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  
+  /* Reset unwanted styles */
+  transform: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Remove Google's default after pseudo-element */
+.pac-container:after {
+  content: none !important;
+  display: none !important;
+}
+
+/* Fix for multiple containers appearing */
+.pac-container + .pac-container {
+  display: none !important;
+}
+
+/* Individual suggestion items */
+.pac-item {
+  padding: 0.75rem 1rem !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  border: none !important;
+  margin: 0 !important;
+  color: #374151 !important;
+  font-size: 0.875rem !important;
+  line-height: 1.25rem !important;
+  transition: background-color 0.15s ease !important;
+}
+
+.pac-item:hover {
+  background-color: #f3f4f6 !important;
+}
+
+.pac-item:first-child {
+  border-top-left-radius: 8px !important;
+  border-top-right-radius: 8px !important;
+}
+
+.pac-item:last-child {
+  border-bottom: none !important;
+  border-bottom-left-radius: 8px !important;
+  border-bottom-right-radius: 8px !important;
+}
+
+/* Main text in suggestions */
+.pac-item-query {
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+  color: #111827 !important;
+  padding-right: 0.5rem !important;
+}
+
+/* Matched text highlighting */
+.pac-matched {
+  font-weight: 600 !important;
+  color: #dc2626 !important;
+}
+
+.pac-icon {
+  display: none !important;
+}
+
+.pac-icon-marker {
+  display: none !important;
+}
+
+/* Add a subtle location icon to each item */
+.pac-item:before {
+  content: '📍';
+  font-size: 12px;
+  opacity: 0.7;
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+
+/* Style for secondary text (address details) */
+.pac-item span:not(.pac-matched):not(.pac-item-query) {
+  color: #6b7280 !important;
+  font-size: 12px !important;
+  display: block !important;
+  margin-top: 2px !important;
+}
+
+/* Ensure proper scrolling */
+.pac-container {
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db #f3f4f6;
+}
+
+.pac-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.pac-container::-webkit-scrollbar-track {
+  background: #f3f4f6;
+}
+
+.pac-container::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+.pac-container::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Loading state for autocomplete */
+.pac-container.pac-loading {
+  opacity: 0.7;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 640px) {
+  .pac-container {
+    max-width: calc(100vw - 2rem) !important;
+  }
+  
+  .pac-item {
+    padding: 0.625rem 0.875rem !important;
+  }
+}
+
+/* Google Places Autocomplete styles */
+.pac-container {
+  z-index: 9999 !important;
+  margin-top: 4px !important;
+  background: white !important;
+  position: absolute !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 0.5rem !important;
+  font-family: inherit !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+              0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+  
+  /* Size and position */
+  width: var(--pac-container-width) !important;
+  left: var(--pac-container-left) !important;
+  top: var(--pac-container-top) !important;
+
+  /* Ensure clickability */
+  pointer-events: auto !important;
+}
+
+/* Hide default Google elements */
+.pac-container:after {
+  display: none !important;
+}
+
+/* Prevent duplicates */
+.pac-container + .pac-container {
+  display: none !important;
+}
+
+/* Style suggestion items */
+.pac-item {
+  padding: 0.75rem 1rem !important;
+  cursor: pointer !important;
+  font-size: 0.875rem !important;
+  color: #374151 !important;
+  border: none !important;
+  border-bottom: 1px solid #f3f4f6 !important;
+}
+
+.pac-item:hover {
+  background-color: #f3f4f6 !important;
+}
+
+.pac-item-query {
+  font-size: 0.875rem !important;
+  color: #111827 !important;
+}
+
+.pac-matched {
+  font-weight: 600 !important;
+  color: #dc2626 !important;
+}
+
+.pac-icon {
+  display: none !important;
 }

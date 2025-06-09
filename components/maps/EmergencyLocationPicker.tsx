@@ -31,23 +31,14 @@ export default function EmergencyLocationPicker({
     longitude: number;
     address?: string;
   } | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [debugInfo, setDebugInfo] = useState<string>('');
   const mapRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const googleMapsLoader = GoogleMapsLoader.getInstance();
 
-  // Default location (Mumbai, India)
   const defaultLocation = initialLocation || { latitude: 19.0760, longitude: 72.8777 };
-
-  const addDebugInfo = (message: string) => {
-    const timestamp = new Date().toLocaleTimeString();
-    setDebugInfo(prev => `${prev}\n[${timestamp}] ${message}`);
-    console.log(`🐛 [${timestamp}] ${message}`);
-  };
 
   useEffect(() => {
     initializeGoogleMaps();
@@ -58,7 +49,6 @@ export default function EmergencyLocationPicker({
     try {
       setIsLoading(true);
       setError(null);
-      addDebugInfo('Initializing Google Maps...');
 
       const loadPromise = googleMapsLoader.load();
       const timeoutPromise = new Promise((_, reject) =>
@@ -70,8 +60,6 @@ export default function EmergencyLocationPicker({
       const mapInstance = await initializeMap();
       setMap(mapInstance);
     } catch (error: any) {
-      console.error('❌ Failed to initialize Google Maps:', error);
-      addDebugInfo(`Initialization failed: ${error.message}`);
       setError(error.message || 'Failed to load Google Maps');
     } finally {
       setIsLoading(false);
@@ -82,8 +70,6 @@ export default function EmergencyLocationPicker({
     if (!mapRef.current || !googleMapsLoader.isGoogleMapsLoaded()) {
       throw new Error('Map container not ready or Google Maps not loaded');
     }
-
-    addDebugInfo('Creating map instance...');
 
     const mapInstance = new window.google.maps.Map(mapRef.current, {
       center: { lat: defaultLocation.latitude, lng: defaultLocation.longitude },
@@ -148,53 +134,55 @@ export default function EmergencyLocationPicker({
     });
 
     setMarker(markerInstance);
-
-    addDebugInfo('Map initialized successfully');
     updateSelectedLocation(defaultLocation.latitude, defaultLocation.longitude);
 
     return mapInstance;
   };
 
-  // Attach Google Places Autocomplete to the input
   useEffect(() => {
     if (!window.google?.maps?.places || !inputRef.current || !map) return;
 
     const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
       types: ['establishment', 'geocode'],
-      fields: ['place_id', 'name', 'formatted_address', 'geometry'],
       componentRestrictions: { country: 'IN' },
+      fields: ['place_id', 'geometry', 'formatted_address', 'name']
     });
 
     autocomplete.bindTo('bounds', map);
 
-    let lastPlaceId: string | null = null;
-
     autocomplete.addListener('place_changed', () => {
       const place = autocomplete.getPlace();
-      if (!place.geometry || !place.geometry.location) {
-        setError('No location found for the selected place.');
-        return;
-      }
-      if (place.place_id === lastPlaceId) return;
-      lastPlaceId = place.place_id ?? null;
+      if (!place.geometry?.location) return;
 
       const lat = place.geometry.location.lat();
       const lng = place.geometry.location.lng();
-
-      // Do NOT set inputRef.current.value here, let Google do it!
-      setSearchQuery(place.name || place.formatted_address || inputRef.current?.value || '');
       updateMapAndMarker(lat, lng);
       updateSelectedLocation(lat, lng, place.formatted_address);
-      setError(null);
     });
 
-    const input = inputRef.current;
-    const handleInputChange = () => { lastPlaceId = null; };
-    input?.addEventListener('input', handleInputChange);
+    const syncPosition = () => {
+      const input = inputRef.current;
+      if (!input) return;
+      const rect = input.getBoundingClientRect();
+      const style = document.documentElement.style;
+      style.setProperty('--pac-container-width', `${rect.width}px`);
+      style.setProperty('--pac-container-left', `${rect.left}px`);
+      style.setProperty('--pac-container-top', `${rect.bottom + window.scrollY}px`);
+    };
+
+    window.addEventListener('resize', syncPosition);
+    window.addEventListener('scroll', syncPosition, true);
+    inputRef.current.addEventListener('focus', syncPosition);
+
+    syncPosition();
 
     return () => {
       window.google.maps.event.clearInstanceListeners(autocomplete);
-      input?.removeEventListener('input', handleInputChange);
+      window.removeEventListener('resize', syncPosition);
+      window.removeEventListener('scroll', syncPosition, true);
+      if (inputRef.current) {
+        inputRef.current.removeEventListener('focus', syncPosition);
+      }
     };
   }, [map]);
 
@@ -210,9 +198,7 @@ export default function EmergencyLocationPicker({
         setTimeout(() => {
           try {
             marker.setAnimation(null);
-          } catch (e) {
-            // Ignore animation cleanup errors
-          }
+          } catch (e) {}
         }, 1500);
       }
     }
@@ -222,54 +208,37 @@ export default function EmergencyLocationPicker({
     const location = { latitude: lat, longitude: lng };
 
     try {
-      addDebugInfo('Getting address via reverse geocoding...');
       let address = providedAddress;
       if (!address) {
         address = await googleMapsLoader.reverseGeocode(lat, lng);
       }
-
       const locationWithAddress = { ...location, address };
-
       setSelectedLocation(locationWithAddress);
       onLocationSelect(locationWithAddress);
-      addDebugInfo(`Location updated: ${address}`);
-
     } catch (error) {
-      console.error('⚠️ Error getting address:', error);
       setSelectedLocation(location);
       onLocationSelect(location);
-      addDebugInfo(`Location updated without address: ${lat}, ${lng}`);
     }
   };
 
   const handleManualSearch = async () => {
-    addDebugInfo('Manual search button clicked');
     let currentQuery = inputRef.current?.value || '';
     if (!currentQuery.trim()) {
-      addDebugInfo('No search query available');
       setError('Please enter a location to search for');
       return;
     }
-    setSearchQuery(currentQuery);
-    addDebugInfo(`Starting manual search for: "${currentQuery}"`);
     await performTextSearch(currentQuery);
   };
 
   const performTextSearch = async (query: string) => {
-    if (!map || !query.trim()) {
-      addDebugInfo('Cannot perform search: no map or empty query');
-      return;
-    }
+    if (!map || !query.trim()) return;
 
     try {
       setIsSearching(true);
       setError(null);
-      addDebugInfo(`Performing text search for: "${query}"`);
 
       const service = new window.google.maps.places.PlacesService(map);
-      const request = {
-        query: query
-      };
+      const request = { query: query };
 
       service.textSearch(request, (results: google.maps.places.PlaceResult[] | null, status: google.maps.places.PlacesServiceStatus) => {
         setIsSearching(false);
@@ -281,24 +250,16 @@ export default function EmergencyLocationPicker({
           if (location) {
             const lat = location.lat();
             const lng = location.lng();
-
-            addDebugInfo(`Text search success: ${place.name} at ${lat}, ${lng}`);
-
-            setSearchQuery(place.name || place.formatted_address || '');
             updateMapAndMarker(lat, lng);
             updateSelectedLocation(lat, lng, place.formatted_address);
           } else {
-            addDebugInfo('Text search result has no location');
             setError('Selected location has no coordinates. Please try another search.');
           }
         } else {
-          addDebugInfo(`Text search failed with status: ${status}`);
           setError(`No results found for "${query}". Please try a different search term.`);
         }
       });
     } catch (error) {
-      console.error('❌ Text search error:', error);
-      addDebugInfo(`Text search error: ${error}`);
       setError('Search failed. Please try again.');
       setIsSearching(false);
     }
@@ -309,17 +270,11 @@ export default function EmergencyLocationPicker({
       setIsLoading(true);
       setError(null);
 
-      addDebugInfo('Getting current location...');
-
       const location = await googleMapsLoader.getCurrentLocation();
 
       updateMapAndMarker(location.latitude, location.longitude);
       updateSelectedLocation(location.latitude, location.longitude);
-
-      addDebugInfo('Current location obtained successfully');
     } catch (error: any) {
-      console.error('❌ Error getting current location:', error);
-      addDebugInfo(`Current location error: ${error.message}`);
       setError(error.message || 'Unable to get your current location. Please select manually on the map.');
     } finally {
       setIsLoading(false);
@@ -361,10 +316,13 @@ export default function EmergencyLocationPicker({
         <div className="space-y-2">
           <Label htmlFor="search">Search for emergency location</Label>
           <div className="flex space-x-2">
-            <Input
-              ref={inputRef}
-              placeholder="Search for emergency location"
-            />
+            <div className="relative w-full">
+              <Input
+                ref={inputRef}
+                placeholder="Search for emergency location"
+                className="w-full"
+              />
+            </div>
             <Button onClick={handleManualSearch} disabled={isLoading || isSearching}>
               {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
             </Button>
@@ -372,14 +330,6 @@ export default function EmergencyLocationPicker({
               <Target className="w-4 h-4" />
             </Button>
           </div>
-
-          {/* Debug Info for Development */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="text-xs text-gray-500 space-y-1">
-              <p>Current search query: "{inputRef.current?.value || ''}"</p>
-            </div>
-          )}
-
           <div className="text-xs text-gray-500 space-y-1">
             <p>• Type address, landmark, or place name</p>
             <p>• Click suggestions or use search button</p>
@@ -455,26 +405,6 @@ export default function EmergencyLocationPicker({
                 </div>
               </div>
             </div>
-          </div>
-        )}
-
-        {/* Debug Panel for Development */}
-        {process.env.NODE_ENV === 'development' && debugInfo && (
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-            <details>
-              <summary className="text-sm font-medium cursor-pointer">Debug Information</summary>
-              <pre className="text-xs mt-2 whitespace-pre-wrap max-h-40 overflow-y-auto">
-                {debugInfo}
-              </pre>
-              <Button
-                onClick={() => setDebugInfo('')}
-                variant="outline"
-                size="sm"
-                className="mt-2"
-              >
-                Clear Debug Log
-              </Button>
-            </details>
           </div>
         )}
       </CardContent>

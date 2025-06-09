@@ -1,5 +1,4 @@
-class GoogleMapsLoader {
-  private static instance: GoogleMapsLoader;
+export class GoogleMapsLoader {  private static instance: GoogleMapsLoader;
   private isLoaded = false;
   private isLoading = false;
   private loadPromise: Promise<void> | null = null;

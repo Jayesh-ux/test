@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,12 +14,18 @@ import {
   Clock, 
   MapPin,
   Phone,
-  Users
+  Users,
+  Loader2
 } from 'lucide-react';
 
 export default function HomePage() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const [loadingStates, setLoadingStates] = useState({
+    vehicle_driver: false,
+    ambulance_driver: false,
+    hospital_admin: false
+  });
 
   useEffect(() => {
     if (!loading && user) {
@@ -39,6 +45,12 @@ export default function HomePage() {
       }
     }
   }, [user, loading, router]);
+
+  const handleRegisterClick = (role: 'vehicle_driver' | 'ambulance_driver' | 'hospital_admin') => {
+    setLoadingStates(prev => ({ ...prev, [role]: true }));
+    // The loading state will be reset when the component unmounts or when user navigates back
+    router.push(`/register?role=${role}`);
+  };
 
   if (loading) {
     return (
@@ -112,7 +124,7 @@ export default function HomePage() {
               <div className="text-sm text-slate-600">Available</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-red-600">&lt;5min</div>
+              <div className="text-2xl font-bold text-red-600">5min</div>
               <div className="text-sm text-slate-600">Response</div>
             </div>
             <div className="text-center">
@@ -136,11 +148,20 @@ export default function HomePage() {
                 Report accidents instantly and get immediate emergency assistance with real-time location tracking.
               </p>
               <div className="space-y-3">
-                <Link href="/register?role=vehicle_driver" className="block">
-                  <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-xl transition-all duration-200">
-                    Get Started
-                  </Button>
-                </Link>
+                <Button 
+                  onClick={() => handleRegisterClick('vehicle_driver')}
+                  disabled={loadingStates.vehicle_driver}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loadingStates.vehicle_driver ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    'Get Started'
+                  )}
+                </Button>
                 <Link href="/login" className="block">
                   <Button variant="outline" className="w-full border-blue-200 text-blue-700 hover:bg-blue-50 font-medium py-3 rounded-xl transition-all duration-200">
                     Sign In
@@ -166,11 +187,20 @@ export default function HomePage() {
                 Receive emergency calls with precise locations and respond quickly to save lives in critical situations.
               </p>
               <div className="space-y-3">
-                <Link href="/register?role=ambulance_driver" className="block">
-                  <Button className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-3 rounded-xl transition-all duration-200">
-                    Join as Responder
-                  </Button>
-                </Link>
+                <Button 
+                  onClick={() => handleRegisterClick('ambulance_driver')}
+                  disabled={loadingStates.ambulance_driver}
+                  className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-3 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loadingStates.ambulance_driver ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    'Join as Responder'
+                  )}
+                </Button>
                 <Link href="/login" className="block">
                   <Button variant="outline" className="w-full border-red-200 text-red-700 hover:bg-red-50 font-medium py-3 rounded-xl transition-all duration-200">
                     Sign In
@@ -196,11 +226,20 @@ export default function HomePage() {
                 Coordinate hospital resources, manage incoming patients, and optimize emergency care workflows.
               </p>
               <div className="space-y-3">
-                <Link href="/register?role=hospital_admin" className="block">
-                  <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3 rounded-xl transition-all duration-200">
-                    Manage Hospital
-                  </Button>
-                </Link>
+                <Button 
+                  onClick={() => handleRegisterClick('hospital_admin')}
+                  disabled={loadingStates.hospital_admin}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loadingStates.hospital_admin ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    'Manage Hospital'
+                  )}
+                </Button>
                 <Link href="/login" className="block">
                   <Button variant="outline" className="w-full border-emerald-200 text-emerald-700 hover:bg-emerald-50 font-medium py-3 rounded-xl transition-all duration-200">
                     Sign In
@@ -221,7 +260,7 @@ export default function HomePage() {
             <Phone className="h-8 w-8 mx-auto mb-4" />
             <h3 className="text-xl font-bold mb-2">Emergency Hotline</h3>
             <p className="text-red-100 mb-4">For immediate assistance call</p>
-            <div className="text-2xl font-bold">911</div>
+            <div className="text-2xl font-bold">108</div>
           </div>
         </div>
       </section>

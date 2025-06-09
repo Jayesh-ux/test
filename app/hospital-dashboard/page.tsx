@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { DatabaseService } from '@/services/databaseService';
-import { HospitalAdmin, Accident, Assignment } from '@/types';
+import { HospitalAdmin, Accident } from '@/types';
 
 export default function HospitalDashboardPage() {
   const { user, logout } = useAuth();
@@ -44,49 +44,14 @@ export default function HospitalDashboardPage() {
     }
   }, [user]);
 
-  const detectUserRegion = async () => {
-    try {
-      // Try to get user's approximate location for better emergency filtering
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const userLocation = {
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude
-            };
-            
-            console.log('📍 User location detected:', userLocation);
-            
-            // You could use this to adjust the search radius or prioritize nearby emergencies
-            // For now, we'll just log it
-          },
-          (error) => {
-            console.log('ℹ️ User location not available:', error.message);
-            // This is fine, we'll use hospital location only
-          },
-          { timeout: 5000, maximumAge: 300000 }
-        );
-      }
-    } catch (error) {
-      console.log('ℹ️ Geolocation not supported or failed');
-    }
-  };
-
   const loadHospitalData = async () => {
     try {
       setLoading(true);
       
-      console.log('🏥 Loading hospital data for user:', user!.id);
-      
-      // Load hospital admin specific data
       const adminData = await DatabaseService.getHospitalAdmin(user!.id);
-      console.log('🏥 Hospital admin data:', adminData);
       setHospitalAdmin(adminData);
 
       if (adminData?.hospitalLocation) {
-        console.log('📍 Hospital location:', adminData.hospitalLocation);
-        
-        // Validate hospital location
         const isValidLocation = await DatabaseService.validateHospitalLocation(adminData.hospitalLocation);
         if (!isValidLocation) {
           toast({
@@ -97,24 +62,15 @@ export default function HospitalDashboardPage() {
           return;
         }
         
-        // Load nearby emergencies using hospital location with adaptive radius
-        let searchRadius = 50; // Default 50km
-        
-        // Adjust search radius based on location (for rural vs urban areas)
-        // You could implement more sophisticated logic here
+        let searchRadius = 50;
         const emergencies = await DatabaseService.getNearbyPendingAccidents(
           adminData.hospitalLocation,
           searchRadius
         );
         
-        console.log('🚨 Found emergencies:', emergencies);
-        console.log('🚨 Emergency count:', emergencies.length);
-        
         setNearbyEmergencies(emergencies);
 
-        // If no emergencies found in 50km, try expanding search for rural areas
         if (emergencies.length === 0 && searchRadius === 50) {
-          console.log('🔍 No emergencies in 50km, expanding search to 100km...');
           const expandedEmergencies = await DatabaseService.getNearbyPendingAccidents(
             adminData.hospitalLocation,
             100
@@ -128,12 +84,8 @@ export default function HospitalDashboardPage() {
             });
           }
         }
-
-        // Detect user region for better UX
-        detectUserRegion();
         
       } else {
-        console.log('❌ No hospital location found for admin');
         toast({
           title: "Setup Required",
           description: "Hospital location not found. Please contact support to update your location.",
@@ -142,7 +94,6 @@ export default function HospitalDashboardPage() {
       }
       
     } catch (error) {
-      console.error('❌ Error loading hospital data:', error);
       toast({
         title: "Error",
         description: "Failed to load hospital data. Please check your internet connection.",
@@ -159,18 +110,16 @@ export default function HospitalDashboardPage() {
     setProcessingEmergencies(prev => new Set(prev).add(accident.id));
     
     try {
-      // Create hospital response
       await DatabaseService.createHospitalResponse({
         accidentId: accident.id,
         hospitalId: hospitalAdmin.hospitalId,
         hospitalName: hospitalAdmin.hospitalName,
         status: 'accepted',
         availableBeds: availableBeds,
-        estimatedArrivalTime: 15, // minutes
+        estimatedArrivalTime: 15,
         specialtyServices: hospitalAdmin.specialtyServices || [],
       });
 
-      // Notify ambulance drivers
       await DatabaseService.notifyAmbulanceDrivers(accident.id, hospitalAdmin.hospitalId);
 
       toast({
@@ -178,11 +127,9 @@ export default function HospitalDashboardPage() {
         description: `Emergency accepted. Ambulance drivers have been notified.`,
       });
 
-      // Refresh data
       loadHospitalData();
       
     } catch (error) {
-      console.error('Error accepting emergency:', error);
       toast({
         title: "Error",
         description: "Failed to accept emergency",
@@ -203,7 +150,6 @@ export default function HospitalDashboardPage() {
     setProcessingEmergencies(prev => new Set(prev).add(accident.id));
     
     try {
-      // Create hospital response with rejection
       await DatabaseService.createHospitalResponse({
         accidentId: accident.id,
         hospitalId: hospitalAdmin.hospitalId,
@@ -219,11 +165,9 @@ export default function HospitalDashboardPage() {
         description: "Emergency rejected. Other hospitals can still respond.",
       });
 
-      // Remove from local list
       setNearbyEmergencies(prev => prev.filter(e => e.id !== accident.id));
       
     } catch (error) {
-      console.error('Error rejecting emergency:', error);
       toast({
         title: "Error",
         description: "Failed to reject emergency",
@@ -256,9 +200,8 @@ export default function HospitalDashboardPage() {
         title: "Logged Out",
         description: "You have been successfully logged out.",
       });
-      router.push('/'); // Navigate to homepage
+      router.push('/');
     } catch (error) {
-      console.error('Logout error:', error);
       toast({
         title: "Error",
         description: "Failed to logout. Please try again.",
@@ -423,7 +366,6 @@ export default function HospitalDashboardPage() {
                     </Button>
                   </div>
 
-                  {/* Bed Status Bar */}
                   <div className="w-full bg-gray-200 rounded-full h-3">
                     <div 
                       className="bg-green-600 h-3 rounded-full transition-all duration-300"
@@ -668,22 +610,6 @@ export default function HospitalDashboardPage() {
                 </div>
               </CardContent>
             </Card>
-
-            {/* Hospital Location Debug Info (for development) */}
-            {hospitalAdmin?.hospitalLocation && (
-              <Card className="border-blue-200">
-                <CardHeader>
-                  <CardTitle className="text-sm text-blue-600">Hospital Location (Debug Info)</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-xs text-gray-600">
-                    <p><strong>Latitude:</strong> {hospitalAdmin.hospitalLocation.latitude}</p>
-                    <p><strong>Longitude:</strong> {hospitalAdmin.hospitalLocation.longitude}</p>
-                    <p><strong>Search Radius:</strong> 50km</p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </div>
         )}
       </div>

@@ -22,6 +22,7 @@ export default function AmbulanceDashboardPage() {
   const [activeAssignments, setActiveAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingRequests, setProcessingRequests] = useState<Set<string>>(new Set());
+  const [distances, setDistances] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!user || user.role !== 'ambulance_driver') {
@@ -29,11 +30,24 @@ export default function AmbulanceDashboardPage() {
       return;
     }
     loadData();
-    
     // Set up real-time updates
     const interval = setInterval(loadData, 30000); // Refresh every 30 seconds
     return () => clearInterval(interval);
   }, [user, router]);
+
+  // Load distances whenever availableEmergencies changes
+  useEffect(() => {
+    const loadDistances = async () => {
+      const newDistances: Record<string, string> = {};
+      for (const { accident } of availableEmergencies) {
+        newDistances[accident.id] = await getDistanceFromDriver(accident.location.latitude, accident.location.longitude);
+      }
+      setDistances(newDistances);
+    };
+    if (availableEmergencies.length > 0) {
+      loadDistances();
+    }
+  }, [availableEmergencies]);
 
   const loadData = async () => {
     try {
@@ -525,7 +539,7 @@ export default function AmbulanceDashboardPage() {
                             <div className="flex items-center">
                               <MapPin className="h-4 w-4 text-gray-500 mr-2" />
                               <span>
-                                {getDistanceFromDriver(accident.location.latitude, accident.location.longitude)}
+                                {distances[accident.id] || '...'}
                               </span>
                             </div>
                             <div className="flex items-center">
